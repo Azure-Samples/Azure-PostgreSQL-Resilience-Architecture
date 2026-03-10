@@ -67,11 +67,12 @@ Azure protects your data against regional outages, ensuring continuity during un
  **Impact** \
   In Azure Database for PostgreSQL flexible server, when you make changes to keys or permissions on the primary server, these changes are typically replicated to any read replicas automatically. This replication includes changes to roles, permissions, and other security settings. Read replicas typically provide near-real-time updates from the primary server, but heavy, persistent write activities can lead to increased replication lag and higher storage usage on the primary due to retained WAL files
 
-### Zonal Protection
-Zonal protection: We offer an option to host your standby instance in a different zone than the primary instance. You can select this option from the availability zone section on the portal and choose from zones [1, 2, 3]. This ensures that your instance is protected in case of a complete zonal outage. For example, if you select availability zone 1 for the primary instance, the standby instance can be chosen from either zone 2 or 3. Once you make this selection, the WAL server will be created in a zone that is different from both the primary and standby instances.
+### Zone Outage Protection
+
+We offer an option to host your standby instance in a different zone than the primary instance. You can select this option from the availability zone section on the portal and choose from zones [1, 2, 3]. This ensures that your instance is protected in case of a complete zone outage. For example, if you select availability zone 1 for the primary instance, the standby instance can be chosen from either zone 2 or 3. Once you make this selection, the WAL server will be created in a zone that is different from both the primary and standby instances.
 
   **Scenario:**  
-  In case of Zonal outage when its Planned like scale computing and scale storage happen on the standby first and then on the primary server. Currently, the server doesn't failover for these planned operations. In case of unplanned failover the standby becomes the new primary and then it creates a new standby in a different zone.
+  In case of zone outage when its Planned like scale computing and scale storage happen on the standby first and then on the primary server. Currently, the server doesn't failover for these planned operations. In case of unplanned failover the standby becomes the new primary and then it creates a new standby in a different zone.
   
   **Recommended Actions:**  
  1.  Configure HA with Zone redundant option and select the zone for Primary and Standby.
@@ -86,30 +87,30 @@ Zonal protection: We offer an option to host your standby instance in a differen
 **Impact:**  
   In Azure Database for PostgreSQL flexible server, when you make changes to keys or permissions on the primary server, these changes are typically replicated to any read replicas automatically. This replication includes changes to roles, permissions, and other security settings. Read replicas typically provide near-real-time updates from the primary server, but heavy, persistent write activities can lead to increased replication lag and higher storage usage on the primary due to retained WAL files
 
-> Note: In the event of a zonal outage where an entire zone goes down due to unforeseen circumstances, the standby instance created in a different zone will become the primary instance. However, it is not possible to create a new standby server until the affected zone is restored.
+> Note: In the event of a zone outage where an entire zone goes down due to unforeseen circumstances, the standby instance created in a different zone will become the primary instance. However, it is not possible to create a new standby server until the affected zone is restored.
 
 # Reference Architectures
 In this architecture we recommend using Private endpoint for the Azure Database for PostgreSQL instance. A private endpoint adds a network interface to a resource, providing it with a private IP address assigned from your virtual network. After it's applied, you can communicate with this resource exclusively via the virtual network. Please read more about [benefits of using Private link](https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/concepts-networking-private-link). 
 Three variants exist in the Azure Database for PostgreSQL resiliency architecture:
 
-### 1. Zonal resilience (without read replica)
-This architecture provisions Azure Database for PostgreSQL flexible server with high availability enabled using the "Zone-Redundant" option. The primary and standby instances are deployed in different availability zones, ensuring resilience against zonal failures. With this configuration, you achieve a Recovery Point Objective (RPO) of zero and a Recovery Time Objective (RTO) of less than 120 seconds. Zone-redundant high availability provides automatic failover, robust protection from zonal outages, and high service-level agreements (SLAs), making it an ideal choice for mission-critical workloads.
+### 1. Zone resilience (without read replica)
+This architecture provisions Azure Database for PostgreSQL flexible server with high availability enabled using the "Zone-Redundant" option. The primary and standby instances are deployed in different availability zones, ensuring resilience against zone failures. With this configuration, you achieve a Recovery Point Objective (RPO) of zero and a Recovery Time Objective (RTO) of less than 120 seconds. Zone-redundant high availability provides automatic failover, robust protection from zone outages, and high service-level agreements (SLAs), making it an ideal choice for mission-critical workloads.
 
-**Zone resilient:** Deploying a standby instance in a different availability zone ensures high availability and protection against zonal failures. This configuration also maintains three copies of your data within the region, providing additional redundancy and data durability.
+**Zone resilient:** Deploying a standby instance in a different availability zone ensures high availability and protection against zone failures. This configuration also maintains three copies of your data within the region, providing additional redundancy and data durability.
 
 ![screenshot](Images/withoutgeobackup.png)
 
-**Zone resilience with geo-redundant backups:** Deploying a standby instance in a different availability zone and enabling geo-redundant backups provides robust protection against both zonal and regional failures. Geo-redundant backups, configured during flexible server creation, ensure data is securely replicated to a paired region. This configuration strengthens disaster recovery capabilities and supports business continuity during major outages.
+**Zone resilience with geo-redundant backups:** Deploying a standby instance in a different availability zone and enabling geo-redundant backups provides robust protection against both zone and regional failures. Geo-redundant backups, configured during flexible server creation, ensure data is securely replicated to a paired region. This configuration strengthens disaster recovery capabilities and supports business continuity during major outages.
 
-![screenshot](Images/zonalresilience.png)
+![screenshot](Images/zoneresilience.png)
 
-### 2. Zonal resilience (with read replica)
-This configuration deploys a flexible server instance with High Availability enabled using the "ZoneRedundant" option, geo-redundant backups, and a read replica in the same region as the primary. This setup provides protection against zonal outages and supports scaling out read-heavy workloads by directing read traffic to the replica through virtual endpoints.
+### 2. Zone resilience (with read replica)
+This configuration deploys a flexible server instance with High Availability enabled using the "ZoneRedundant" option, geo-redundant backups, and a read replica in the same region as the primary. This setup provides protection against zone outages and supports scaling out read-heavy workloads by directing read traffic to the replica through virtual endpoints.
 
-![screenshot](Images/readreplicazonal.png)
+![screenshot](Images/readreplicazone.png)
 
 ### 3. Regional resilience
-This architecture deploys a flexible server instance with High Availability enabled using the "ZoneRedundant" option and geo-redundant backups configured at server creation. It provisions one read replica in the same region as the primary server but in a different zone, along with another read replica in a different region. This setup ensures protection against both zonal and regional outages. The cross-region read replica supports a robust disaster recovery strategy, maintaining a Recovery Point Objective (RPO) of less than 5 minutes. In the event of a regional failover, the cross-region read replica can be promoted to serve as the new primary instance, enabling applications to remain operational with minimal downtime. This architecture offers the highest level of resiliency, covering all failure scenarios from zonal to regional outages, making it well suited for mission-critical workloads.
+This architecture deploys a flexible server instance with High Availability enabled using the "ZoneRedundant" option and geo-redundant backups configured at server creation. It provisions one read replica in the same region as the primary server but in a different zone, along with another read replica in a different region. This setup ensures protection against both zone and regional outages. The cross-region read replica supports a robust disaster recovery strategy, maintaining a Recovery Point Objective (RPO) of less than 5 minutes. In the event of a regional failover, the cross-region read replica can be promoted to serve as the new primary instance, enabling applications to remain operational with minimal downtime. This architecture offers the highest level of resiliency, covering all failure scenarios from zone to regional outages, making it well suited for mission-critical workloads.
 
 ![screenshot](Images/cross-regionreadreplica.png)
 
@@ -138,11 +139,11 @@ To deploy this solution using Terraform, follow these steps:
 
 ### Execute Different Versions of Terraform Files:
 
-   - **Zonal Resilience (Without read replica)**:
+   - **Zone Resilience (Without read replica)**:
 
       This has a script that deploys Azure PostgreSQL flexible server instance with high avaliability enabled. Edit the "variables.tf" file with your subscription-id, desired names, version and etc. for all the resources.
 
-   - **Zonal Resilience (With read replica)**:
+   - **Zone Resilience (With read replica)**:
 
      Modify the default value in variables in the two provided files: "variables.tf" and "main.tf". To add the values for the variables create a "terraform.tfvars" file and add the variable names; the "main.tf", find all the modules and resources that are deployed with one read replicas in the same region as that of the primary instance.
    
